@@ -124,3 +124,4 @@ if uploaded_files:
             type="primary",
             use_container_width=True
         )
+st.error(f"❌ 解析 {file_name} 失败: 请检查网络连接或 API Key 是否有效。")
