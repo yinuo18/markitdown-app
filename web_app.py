@@ -58,7 +58,7 @@ def parse_document(file_path, file_name, api_key):
         # 4.1 提取 PDF 纯文本内容
         text_content = ""
         try:
-            with pdfplumber.open(file_path) as pdf:
+            with pdfplumber.open(file_path, password=b"") as pdf:
                 for page in pdf.pages:
                     extracted = page.extract_text()
                     if extracted:
