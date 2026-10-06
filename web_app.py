@@ -124,4 +124,11 @@ if uploaded_files:
             type="primary",
             use_container_width=True
         )
-        st.error(f"❌ 解析 {file_name} 失败: 请检查网络连接或 API Key 是否有效。")
+        try:
+                    # ...上面是你原本正确的解析代码...
+                    markdown_text = parse_document(temp_path, file.name, user_api_key)
+                    # ...中间的代码省略...
+                    
+        except Exception as e:
+                    # 👇 注意下面这行的缩进，并且去掉了 file_name，换成了真实错误 e
+                    st.error(f"❌ 解析失败，系统底层报错为: {str(e)}")
