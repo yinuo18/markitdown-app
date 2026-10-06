@@ -3,6 +3,6 @@ pandas
 openpyxl
 streamlit
 markitdown[all]
-pdfplumber<0.11.0
+pdfplumber
 pillow<12
 openai
