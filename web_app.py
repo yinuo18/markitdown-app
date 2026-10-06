@@ -79,7 +79,7 @@ def parse_document(file_path, file_name, api_key):
 
 # 5. 核心交互区
 uploaded_files = st.file_uploader(
-    "拖拽文件至此开启 VLM 混合解析 (支持批量上传 PDF / XLSX / DOCX 等)",
+    "拖拽文件至此开启 VLM 混合解析 (支持批量上传 PDF / XLSX / DOCX 等)", 
     type=["pdf", "docx", "pptx", "xlsx", "csv", "html"],
     accept_multiple_files=True
 )
@@ -87,33 +87,32 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     zip_buffer = io.BytesIO()
     processed_count = 0
-
+    
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in uploaded_files:
             temp_path = file.name
             with open(temp_path, "wb") as f:
                 f.write(file.getbuffer())
-
+            
             with st.spinner(f"⏳ 引擎全开，正在高精度重构 {file.name}..."):
                 try:
                     markdown_text = parse_document(temp_path, file.name, user_api_key)
                     if markdown_text:
                         zip_file.writestr(f"Parsed_{file.name}.md", markdown_text)
                         processed_count += 1
-
+                        
                         with st.expander(f"✅ {file.name} (解析成功)", expanded=False):
-                            st.download_button("⬇️ 单独下载", data=markdown_text, file_name=f"Parsed_{file.name}.md",
-                                               mime="text/markdown", key=f"btn_{file.name}")
+                            st.download_button("⬇️ 单独下载", data=markdown_text, file_name=f"Parsed_{file.name}.md", mime="text/markdown", key=f"btn_{file.name}")
                             st.text_area("高精度文本预览：", markdown_text, height=150, key=f"txt_{file.name}")
                 except Exception as e:
-                    st.error(f"❌ 解析 {file.name} 失败: 请检查网络连接或 API Key 是否有效。")
+                    st.error(f"❌ 解析 {file.name} 失败，系统底层报错为: {str(e)}")
                 finally:
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
-
+            
             # API 频率保护
             time.sleep(2)
-
+            
     if processed_count > 0:
         st.success(f"🎉 任务完成！共成功处理 {processed_count} 个文件。")
         st.download_button(
@@ -124,11 +123,3 @@ if uploaded_files:
             type="primary",
             use_container_width=True
         )
-        try:
-                    # ...上面是你原本正确的解析代码...
-                    markdown_text = parse_document(temp_path, file.name, user_api_key)
-                    # ...中间的代码省略...
-                    
-        except Exception as e:
-                    # 👇 注意下面这行的缩进，并且去掉了 file_name，换成了真实错误 e
-                    st.error(f"❌ 解析失败，系统底层报错为: {str(e)}")
