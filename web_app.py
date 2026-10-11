@@ -10,14 +10,19 @@ import time
 # 1. 全局配置
 st.set_page_config(page_title="OmniDoc AI", page_icon="⚡", layout="wide")
 
-# 2. 侧边栏：API Key 防蹭额度设置 (核心升级)
+# 2. 侧边栏：API Key 与使用模式设置
 with st.sidebar:
     st.markdown("### ⚙ 核心引擎设置")
-    user_api_key = st.text_input("🔑 请输入 DeepSeek API Key (用于 PDF 深度解析)", type="password")
+    user_api_key = st.text_input("🔑 请输入 DeepSeek API Key", type="password")
+
+    # 动态状态反馈
     if user_api_key:
-        st.success("✅ 密钥已就绪，文本重构引擎已激活")
+        st.success("✅ 密钥已就绪，全格式 AI 深度排版已激活")
+    else:
+        st.info("💡 当前为【基础提取模式】，输入 Key 即可解锁完美的表格对齐与错字修复。")
+
     st.markdown("---")
-    st.markdown("💡 **没有 Key 怎么办？**\n前往 DeepSeek 开放平台 (platform.deepseek.com) 注册，1分钟即可获取。")
+    st.markdown("**没有 Key 怎么办？**\n前往 DeepSeek 开放平台 (platform.deepseek.com) 注册，1分钟即可获取。")
 
     with st.expander("👉 点击查看 API Key 免费获取保姆级教程"):
         st.markdown("""
@@ -25,17 +30,14 @@ with st.sidebar:
         打开浏览器访问 `platform.deepseek.com`，使用手机号或微信登录。
 
         **2. 创建密钥**
-        点击左侧菜单的 **API Keys**，点击 **创建 API Key**，随意起个名字（如“文献解析”）。
+        点击左侧菜单的 **API Keys**，点击 **创建 API Key**，随意起个名字。
 
         **3. 复制保存（非常重要）**
-        系统会生成一串以 `sk-` 开头的代码。**务必立刻点击复制并保存到备忘录**。一旦关闭窗口，这串完整代码将永远隐藏！
+        系统会生成一串以 `sk-` 开头的代码。**务必立刻点击复制并保存到备忘录**。一旦关闭窗口，这串代码将永远隐藏！
 
         **4. 填入系统**
-        将这串 `sk-` 开头的代码粘贴到上方输入框，即可解锁解析引擎！新用户自动获赠的免费额度，足够解析上百篇论文。
+        将代码粘贴到上方输入框，即可解锁 AI 引擎！新用户自动获赠的免费额度，足够解析上百篇论文。
         """)
-
-    st.markdown("---")
-    st.markdown("*(注：处理 Excel / Word / PPT 时直接调用本地轻量引擎，无需输入 Key)*")
 # 3. 注入现代化 SaaS 风格的 CSS 样式
 st.markdown("""
 <style>
@@ -58,17 +60,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# 4. 混合双擎解析函数
-# 4. 全格式 AI 深度解析引擎
+# 4. 双轨制智能解析引擎 (支持无 Key 基础提取)
 def parse_document(file_path, file_name, api_key):
-    if not api_key:
-        raise Exception("⚠️ 请先在左侧侧边栏输入 DeepSeek API Key！全格式 AI 分析需要大模型支持。")
-
     text_content = ""
 
-    # 【第一步：底层文本提取】根据文件类型采取不同提取策略
+    # 【第一阶段：底层基础文本提取】（所有人都会执行这一步）
     if file_name.lower().endswith('.pdf'):
-        st.info(f"📄 正在提取 PDF 文本...")
+        st.info(f"📄 正在进行基础文本提取...")
         try:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
@@ -78,7 +76,7 @@ def parse_document(file_path, file_name, api_key):
         except Exception as e:
             raise Exception(f"PDF 文本读取失败: {str(e)}")
     else:
-        st.info(f"📊 正在提取 {file_name} 的结构化数据...")
+        st.info(f"📊 正在提取 {file_name} 的底层数据...")
         try:
             md = MarkItDown()
             result = md.convert(file_path)
@@ -87,23 +85,29 @@ def parse_document(file_path, file_name, api_key):
             raise Exception(f"文档底层数据提取失败: {str(e)}")
 
     if not text_content or len(text_content.strip()) < 10:
-        raise Exception("未能从文档中提取到有效文字，请确保它不是纯图片。")
+        raise Exception("未能从文档中提取到有效文字，请确保它不是纯图片扫描件。")
 
-    # 【第二步：统一移交 DeepSeek 进行 AI 深度洗稿与重构】
-    st.info(f"🤖 提取成功！已移交 DeepSeek 引擎进行 AI 深度重构与排版...")
-    try:
-        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system",
-                 "content": "你是一个专业的学术文档与数据排版分析助手。请将用户提供的未格式化文本或粗糙的表格数据，重新整理成结构清晰、排版整洁的 Markdown 格式。要求：1. 修正乱码与错别字；2. 完美理顺表格行数与列数的数据对应关系；3. 保持学术严谨性，不遗漏关键数据。"},
-                {"role": "user", "content": f"请重构并优化以下提取自《{file_name}》的文本数据：\n\n{text_content}"}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        raise Exception(f"DeepSeek AI 分析异常: {str(e)}")
+    # 【第二阶段：分流处理】（有 Key 则 AI 深度精装修，无 Key 则直接输出毛坯房）
+    if api_key:
+        st.info(f"🤖 检测到 API Key！已移交 DeepSeek 引擎进行深度重构与排版...")
+        try:
+            client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system",
+                     "content": "你是一个专业的学术文档与数据排版分析助手。请将用户提供的未格式化文本或粗糙的表格数据，重新整理成结构清晰、排版整洁的 Markdown 格式。要求：1. 修正乱码与错别字；2. 完美理顺表格行数与列数的数据对应关系；3. 保持学术严谨性，不遗漏关键数据。"},
+                    {"role": "user", "content": f"请重构并优化以下提取自《{file_name}》的文本数据：\n\n{text_content}"}
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            raise Exception(f"DeepSeek AI 分析异常: {str(e)}")
+    else:
+        # 无 Key 状态下的自动降级提示
+        st.warning("⚠️ 当前处于【基础提取模式】。如需完美的表格对齐、错字修复和 AI 深度排版，请在左侧输入 API Key。")
+        fallback_text = f"> **提示**：未启用 AI 深度排版引擎，以下为底层直接提取的原始文本：\n\n---\n\n{text_content}"
+        return fallback_text
 
 # 5. 核心交互区
 uploaded_files = st.file_uploader(
