@@ -59,17 +59,16 @@ st.markdown("""
 
 
 # 4. 混合双擎解析函数
+# 4. 全格式 AI 深度解析引擎
 def parse_document(file_path, file_name, api_key):
-    # 【引擎 A】针对 PDF 启用 DeepSeek 大模型进行学术重构
+    if not api_key:
+        raise Exception("⚠️ 请先在左侧侧边栏输入 DeepSeek API Key！全格式 AI 分析需要大模型支持。")
+
+    text_content = ""
+
+    # 【第一步：底层文本提取】根据文件类型采取不同提取策略
     if file_name.lower().endswith('.pdf'):
-        if not api_key:
-            st.warning(f"⚠️ 解析 {file_name} 需要大模型支持，请先在左侧侧边栏输入你的 API Key！")
-            return None
-
-        st.info(f"📄 检测到 PDF 文献，已启动 DeepSeek 解析引擎...")
-
-        # 4.1 提取 PDF 纯文本内容
-        text_content = ""
+        st.info(f"📄 正在提取 PDF 文本...")
         try:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
@@ -78,32 +77,33 @@ def parse_document(file_path, file_name, api_key):
                         text_content += extracted + "\n"
         except Exception as e:
             raise Exception(f"PDF 文本读取失败: {str(e)}")
-
-        if len(text_content.strip()) < 10:
-            raise Exception("未能从文档中提取到有效文字，请确保它不是纯图片扫描件。")
-
-        # 4.2 调用 DeepSeek 进行学术级洗稿与表格重构
-        try:
-            client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-            response = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[
-                    {"role": "system",
-                     "content": "你是一个专业的学术文档排版助手。请将用户提供的未格式化文本，重新整理成结构清晰、排版整洁的 Markdown 格式。请重点修正乱码错别字，并理顺跨页表格的数据对应关系。"},
-                    {"role": "user", "content": f"请重构以下提取自《{file_name}》的文本：\n\n{text_content}"}
-                ]
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            raise Exception(f"DeepSeek 接口调用异常: {str(e)}")
-
-    # 【引擎 B】针对结构化数据回退使用 MarkItDown
     else:
-        st.info(f"📊 检测到结构化数据，使用 MarkItDown 高速提取...")
-        md = MarkItDown()
-        result = md.convert(file_path)
-        return result.text_content
+        st.info(f"📊 正在提取 {file_name} 的结构化数据...")
+        try:
+            md = MarkItDown()
+            result = md.convert(file_path)
+            text_content = result.text_content
+        except Exception as e:
+            raise Exception(f"文档底层数据提取失败: {str(e)}")
 
+    if not text_content or len(text_content.strip()) < 10:
+        raise Exception("未能从文档中提取到有效文字，请确保它不是纯图片。")
+
+    # 【第二步：统一移交 DeepSeek 进行 AI 深度洗稿与重构】
+    st.info(f"🤖 提取成功！已移交 DeepSeek 引擎进行 AI 深度重构与排版...")
+    try:
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system",
+                 "content": "你是一个专业的学术文档与数据排版分析助手。请将用户提供的未格式化文本或粗糙的表格数据，重新整理成结构清晰、排版整洁的 Markdown 格式。要求：1. 修正乱码与错别字；2. 完美理顺表格行数与列数的数据对应关系；3. 保持学术严谨性，不遗漏关键数据。"},
+                {"role": "user", "content": f"请重构并优化以下提取自《{file_name}》的文本数据：\n\n{text_content}"}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        raise Exception(f"DeepSeek AI 分析异常: {str(e)}")
 
 # 5. 核心交互区
 uploaded_files = st.file_uploader(
