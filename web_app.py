@@ -8,7 +8,7 @@ import io
 import time
 
 # 1. 全局配置
-st.set_page_config(page_title="文献解析舱 2.0 | DeepSeek 驱动", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="OmniDoc AI", page_icon="⚡", layout="wide")
 
 # 2. 侧边栏：API Key 防蹭额度设置 (核心升级)
 with st.sidebar:
@@ -52,8 +52,8 @@ st.markdown("""
     }
 </style>
 <div class="hero-banner">
-    <h1 style="margin:0; font-weight:800;">⚡ 智能文献解析舱 <span style="color:#F59E0B;">2.0 终极版</span></h1>
-    <p style="opacity:0.9; margin-top:10px;">搭载 DeepSeek 大语言模型引擎，彻底攻克排版错位与文本提取难题</p>
+    <h1 style="margin:0; font-weight:800;">⚡ OmniDoc <span style="color:#F59E0B;">AI</span></h1>
+    <p style="opacity:0.9; margin-top:10px;">Powered by DeepSeek | 全格式智能文档解析引擎</p>
 </div>
 """, unsafe_allow_html=True)
 
